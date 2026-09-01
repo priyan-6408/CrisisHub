@@ -1,0 +1,37 @@
+{
+  "project": "CrisisHub",
+  "version": "1.0.0",
+
+  "incidents": {
+    "create": {
+      "method": "POST",
+      "path": "/incidents"
+    },
+    "list": {
+      "method": "GET",
+      "path": "/incidents"
+    },
+    "get": {
+      "method": "GET",
+      "path": "/incidents/{incident_id}"
+    }
+  },
+
+  "approval": {
+    "approve": {
+      "method": "POST",
+      "path": "/incidents/{incident_id}/approve"
+    }
+  },
+
+  "actions": {
+    "create": {
+      "method": "POST",
+      "path": "/incidents/{incident_id}/actions"
+    },
+    "list": {
+      "method": "GET",
+      "path": "/incidents/{incident_id}/actions"
+    }
+  }
+}
