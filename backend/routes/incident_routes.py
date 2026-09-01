@@ -1,10 +1,72 @@
-from fastapi import APIRouter, HTTPException
+import json
+import math
+from pathlib import Path
+
+from fastapi import APIRouter
 from backend.shared.schemas import IncidentResponse, IncidentListResponse
 from backend.copilot.decision_engine import Incident as CopilotIncident
 from backend.copilot.plan_generator import generate_recommendation
 from backend.copilot.safety_critic import review_recommendation
 
+
 router = APIRouter(prefix="/incidents", tags=["incidents"])
+
+RESPONDERS_FILE = Path("backend/data/responders.json")
+
+
+def calculate_distance_km(
+    latitude1: float,
+    longitude1: float,
+    latitude2: float,
+    longitude2: float,
+) -> float:
+    """Calculate the distance between two coordinates using the Haversine formula."""
+
+    earth_radius_km = 6371.0
+
+    lat1 = math.radians(latitude1)
+    lat2 = math.radians(latitude2)
+
+    delta_lat = math.radians(latitude2 - latitude1)
+    delta_lon = math.radians(longitude2 - longitude1)
+
+    a = (
+        math.sin(delta_lat / 2) ** 2
+        + math.cos(lat1)
+        * math.cos(lat2)
+        * math.sin(delta_lon / 2) ** 2
+    )
+
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    return earth_radius_km * c
+
+
+def get_available_responder_distances(
+    latitude: float,
+    longitude: float,
+) -> dict[str, float]:
+    """Return distances to all available responders."""
+
+    with open(RESPONDERS_FILE, encoding="utf-8") as file:
+        responders = json.load(file)
+
+    distances = {}
+
+    for responder in responders:
+        if responder.get("status") != "available":
+            continue
+
+        distance = calculate_distance_km(
+            latitude,
+            longitude,
+            responder["latitude"],
+            responder["longitude"],
+        )
+
+        distances[responder["responder_id"]] = round(distance, 2)
+
+    return distances
 
 
 @router.get("/", response_model=IncidentListResponse)
@@ -59,6 +121,7 @@ def get_incidents():
         "total": len(incidents),
     }
 
+
 @router.get("/{incident_id}/recommendation")
 def get_incident_recommendation(incident_id: str):
     incident = get_incident(incident_id)
@@ -70,15 +133,32 @@ def get_incident_recommendation(incident_id: str):
         "critical": 10,
     }
 
+    responder_distances = get_available_responder_distances(
+        incident.latitude,
+        incident.longitude,
+    )
+
     copilot_incident = CopilotIncident(
         incident_id=incident.incident_id,
         location=f"{incident.latitude},{incident.longitude}",
         incident_type=incident.incident_type,
         severity=severity_map.get(incident.severity.lower(), 5),
         people_affected=incident.people_affected,
+        people_trapped=(
+            1
+            if "trapped" in (incident.description or "").lower()
+            else 0
+        ),
+        elderly_people=(
+            1
+            if "elderly" in (incident.description or "").lower()
+            else 0
+        ),
+        distance_to_units=responder_distances,
     )
 
     recommendation = generate_recommendation(copilot_incident)
+
     safety_review = review_recommendation(
         copilot_incident,
         recommendation,
