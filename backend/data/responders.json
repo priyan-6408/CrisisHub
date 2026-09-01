@@ -1,0 +1,42 @@
+[
+  {
+    "responder_id": "R-001",
+    "name": "Chennai Rescue Team",
+    "type": "rescue",
+    "location": "Chennai",
+    "latitude": 13.0827,
+    "longitude": 80.2707,
+    "status": "available",
+    "capacity": 10
+  },
+  {
+    "responder_id": "R-002",
+    "name": "Kelambakkam Medical Response Team",
+    "type": "medical",
+    "location": "Kelambakkam",
+    "latitude": 12.8450,
+    "longitude": 80.2260,
+    "status": "available",
+    "capacity": 6
+  },
+  {
+    "responder_id": "R-003",
+    "name": "Fire and Rescue Unit",
+    "type": "fire_rescue",
+    "location": "Sholinganallur",
+    "latitude": 12.9010,
+    "longitude": 80.2270,
+    "status": "available",
+    "capacity": 8
+  },
+  {
+    "responder_id": "R-004",
+    "name": "Emergency Support Team",
+    "type": "general",
+    "location": "Navalur",
+    "latitude": 12.8500,
+    "longitude": 80.2200,
+    "status": "available",
+    "capacity": 12
+  }
+]

@@ -1,0 +1,35 @@
+[
+  {
+    "hospital_id": "H-001",
+    "name": "Government General Hospital",
+    "location": "Chennai",
+    "latitude": 13.0827,
+    "longitude": 80.2707,
+    "available_beds": 45,
+    "emergency_capacity": 20,
+    "specialties": ["emergency", "trauma", "general_medicine"],
+    "status": "operational"
+  },
+  {
+    "hospital_id": "H-002",
+    "name": "Kelambakkam Medical Centre",
+    "location": "Kelambakkam",
+    "latitude": 12.8450,
+    "longitude": 80.2260,
+    "available_beds": 25,
+    "emergency_capacity": 10,
+    "specialties": ["emergency", "general_medicine"],
+    "status": "operational"
+  },
+  {
+    "hospital_id": "H-003",
+    "name": "Emergency Care Hospital",
+    "location": "Sholinganallur",
+    "latitude": 12.9010,
+    "longitude": 80.2270,
+    "available_beds": 30,
+    "emergency_capacity": 15,
+    "specialties": ["emergency", "trauma", "critical_care"],
+    "status": "operational"
+  }
+]
