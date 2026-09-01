@@ -1,0 +1,47 @@
+[
+  {
+    "resource_id": "RES-001",
+    "name": "Rescue Boats",
+    "type": "rescue_boat",
+    "quantity": 8,
+    "available_quantity": 6,
+    "location": "Kelambakkam",
+    "status": "available"
+  },
+  {
+    "resource_id": "RES-002",
+    "name": "Emergency Medical Kits",
+    "type": "medical_kit",
+    "quantity": 50,
+    "available_quantity": 35,
+    "location": "Chennai",
+    "status": "available"
+  },
+  {
+    "resource_id": "RES-003",
+    "name": "Fire Extinguishers",
+    "type": "fire_equipment",
+    "quantity": 30,
+    "available_quantity": 22,
+    "location": "Sholinganallur",
+    "status": "available"
+  },
+  {
+    "resource_id": "RES-004",
+    "name": "Emergency Food Packs",
+    "type": "food",
+    "quantity": 500,
+    "available_quantity": 350,
+    "location": "Navalur",
+    "status": "available"
+  },
+  {
+    "resource_id": "RES-005",
+    "name": "Rescue Personnel",
+    "type": "emergency_personnel",
+    "quantity": 40,
+    "available_quantity": 25,
+    "location": "Chennai",
+    "status": "available"
+  }
+]
