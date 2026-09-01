@@ -1,4 +1,8 @@
-def generate_recommendation(incident: Incident):
+from backend.copilot.decision_engine import Incident, calculate_priority
+
+
+def generate_recommendation(incident: Incident) -> dict:
+    """Generate a responder recommendation for an incident."""
 
     score = calculate_priority(incident)
 
@@ -17,7 +21,6 @@ def generate_recommendation(incident: Incident):
         reasons.append("Mobility assistance required")
 
     if incident.distance_to_units:
-
         unit = min(
             incident.distance_to_units,
             key=incident.distance_to_units.get
@@ -28,7 +31,6 @@ def generate_recommendation(incident: Incident):
         reasons.append(
             f"{unit} is approximately {distance} km away"
         )
-
     else:
         unit = "No unit available"
         reasons.append("No responder distance data available")
@@ -40,7 +42,3 @@ def generate_recommendation(incident: Incident):
         "priority_score": score,
         "reasons": reasons
     }
-
-
-@app.get("/")
-def home():
