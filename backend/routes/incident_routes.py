@@ -12,6 +12,7 @@ from backend.copilot.safety_critic import review_recommendation
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
 RESPONDERS_FILE = Path("backend/data/responders.json")
+RESOURCES_FILE = Path("backend/data/resources.json")
 
 
 def calculate_distance_km(
@@ -69,6 +70,31 @@ def get_available_responder_distances(
     return distances
 
 
+def get_available_resources() -> dict[str, list[str]]:
+    """Return available resources grouped by resource type."""
+
+    with open(RESOURCES_FILE, encoding="utf-8") as file:
+        resources = json.load(file)
+
+    available_resources = {}
+
+    for resource in resources:
+        if resource.get("status") != "available":
+            continue
+
+        if resource.get("available_quantity", 0) <= 0:
+            continue
+
+        resource_type = resource["type"]
+        resource_name = resource["name"]
+
+        available_resources.setdefault(resource_type, []).append(
+            resource_name
+        )
+
+    return available_resources
+
+
 @router.get("/", response_model=IncidentListResponse)
 def get_incidents():
     incidents = [
@@ -94,7 +120,7 @@ def get_incidents():
             severity="high",
             priority_score=74,
             latitude=12.850,
-            longitude=80.220,
+            longitude=12.220,
             people_affected=6,
             status="active",
             verified=False,
@@ -108,7 +134,7 @@ def get_incidents():
             severity="moderate",
             priority_score=45,
             latitude=12.840,
-            longitude=80.230,
+            longitude=12.230,
             people_affected=1,
             status="active",
             verified=False,
@@ -138,6 +164,8 @@ def get_incident_recommendation(incident_id: str):
         incident.longitude,
     )
 
+    available_resources = get_available_resources()
+
     copilot_incident = CopilotIncident(
         incident_id=incident.incident_id,
         location=f"{incident.latitude},{incident.longitude}",
@@ -155,6 +183,7 @@ def get_incident_recommendation(incident_id: str):
             else 0
         ),
         distance_to_units=responder_distances,
+        available_resources=available_resources,
     )
 
     recommendation = generate_recommendation(copilot_incident)
