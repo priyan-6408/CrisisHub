@@ -1,8 +1,12 @@
+from pydantic import BaseModel, Field
+from typing import Dict, List
+
+
 class Incident(BaseModel):
     incident_id: str
     location: str
     incident_type: str
-    severity: int
+    severity: int = Field(ge=0, le=10)
     people_affected: int = 0
     people_trapped: int = 0
     elderly_people: int = 0
@@ -12,7 +16,8 @@ class Incident(BaseModel):
     available_resources: Dict[str, List[str]] = {}
 
 
-def calculate_priority(incident: Incident):
+def calculate_priority(incident: Incident) -> int:
+    """Calculate a priority score from 0 to 100."""
 
     score = 0
 
@@ -25,5 +30,3 @@ def calculate_priority(incident: Incident):
         score += 10
 
     return min(score, 100)
-
-
