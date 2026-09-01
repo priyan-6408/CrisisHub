@@ -1,5 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from backend.shared.schemas import IncidentResponse, IncidentListResponse
+from backend.copilot.decision_engine import Incident as CopilotIncident
+from backend.copilot.plan_generator import generate_recommendation
+from backend.copilot.safety_critic import review_recommendation
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
@@ -54,6 +57,37 @@ def get_incidents():
     return {
         "incidents": incidents,
         "total": len(incidents),
+    }
+
+@router.get("/{incident_id}/recommendation")
+def get_incident_recommendation(incident_id: str):
+    incident = get_incident(incident_id)
+
+    severity_map = {
+        "low": 3,
+        "moderate": 5,
+        "high": 8,
+        "critical": 10,
+    }
+
+    copilot_incident = CopilotIncident(
+        incident_id=incident.incident_id,
+        location=f"{incident.latitude},{incident.longitude}",
+        incident_type=incident.incident_type,
+        severity=severity_map.get(incident.severity.lower(), 5),
+        people_affected=incident.people_affected,
+    )
+
+    recommendation = generate_recommendation(copilot_incident)
+    safety_review = review_recommendation(
+        copilot_incident,
+        recommendation,
+    )
+
+    return {
+        "incident": incident,
+        "recommendation": recommendation,
+        "safety_review": safety_review,
     }
 
 

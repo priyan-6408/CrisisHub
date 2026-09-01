@@ -75,3 +75,20 @@ def test_create_action():
     assert data["incident_id"] == "CR-1048"
     assert data["action_type"] == "rescue"
     assert data["status"] == "pending"
+
+def test_get_incident_recommendation():
+    response = client.get("/incidents/CR-1048/recommendation")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["incident"]["incident_id"] == "CR-1048"
+    assert "recommendation" in data
+    assert "safety_review" in data
+
+    assert data["recommendation"]["incident_id"] == "CR-1048"
+    assert data["recommendation"]["priority_score"] == 100
+
+    assert data["safety_review"]["status"] == "NEEDS_REVIEW"
+    assert data["safety_review"]["safe_to_execute"] is False
