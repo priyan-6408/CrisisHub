@@ -3,6 +3,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Too
 import { aiEvents, agents, chartData, incidents, simulationSteps, Incident } from "@/data/mockData";
 import { Icon } from "@/components/Icon";
 import MapBoard from "@/components/MapBoard";
+import { getIncidents } from "@/lib/api";
 
 export function SectionHeader({ eyebrow, title, desc, action }: { eyebrow: string; title: ReactNode; desc?: string; action?: ReactNode }) {
   return <div className="section-header"><div><div className="eyebrow"><span className="eyebrow-line" /> {eyebrow}</div><h1>{title}</h1>{desc && <p>{desc}</p>}</div>{action}</div>;
@@ -59,10 +60,360 @@ export function IncidentsPage({ notify }: { notify: (message: string) => void })
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("ALL");
   const [selected, setSelected] = useState<Incident | null>(null);
-  const filtered = useMemo(() => incidents.filter((incident) => (severity === "ALL" || incident.severity === severity) && `${incident.id} ${incident.type} ${incident.location}`.toLowerCase().includes(search.toLowerCase())), [search, severity]);
-  return <div className="workspace"><SectionHeader eyebrow="OPERATIONS / INCIDENT INTELLIGENCE" title="INCIDENTS" desc="147 active signals · 118 verified · 23 critical" action={<button className="primary-button" onClick={() => notify("Incident intake panel opened")}><Icon name="plus" size={14} /> NEW INCIDENT</button>} /><div className="table-toolbar"><div className="search-field"><Icon name="search" size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search ID, type, or location..." /></div><div className="filter-pills">{["ALL", "CRITICAL", "HIGH", "MODERATE"].map((value) => <button key={value} className={severity === value ? "active" : ""} onClick={() => setSeverity(value)}>{value}</button>)}</div><button className="secondary-button compact"><Icon name="sliders" size={14} /> MORE FILTERS</button></div><div className="panel table-panel"><table><thead><tr><th>ID</th><th>TYPE</th><th>LOCATION</th><th>SEVERITY</th><th>STATUS</th><th>VERIFY</th><th>PRIORITY</th><th>RESPONDER</th><th>TIME</th></tr></thead><tbody>{filtered.map((incident) => <tr key={incident.id} onClick={() => setSelected(incident)}><td className="mono strong-cell">{incident.id}</td><td><span className="type-cell"><span className="table-type-dot" />{incident.type}</span></td><td>{incident.location}</td><td><StatusBadge value={incident.severity} /></td><td><StatusBadge value={incident.status} /></td><td><span className="verify-cell"><span className="verify-track"><i style={{ width: `${incident.verification}%` }} /></span>{incident.verification}%</span></td><td><strong className={incident.priority > 90 ? "danger-text" : "amber-text"}>{incident.priority}</strong></td><td className="mono">{incident.responder}</td><td className="mono dim">{incident.time}</td></tr>)}</tbody></table><div className="table-footer"><span>SHOWING {filtered.length} OF 147 INCIDENTS</span><div><button><Icon name="chevronLeft" size={14} /></button><button className="active">1</button><button>2</button><button>3</button><button><Icon name="chevronRight" size={14} /></button></div></div></div>{selected && <div className="drawer-overlay" onMouseDown={() => setSelected(null)}><aside className="incident-drawer panel" onMouseDown={(event) => event.stopPropagation()}><div className="drawer-head"><div><span className="eyebrow">INCIDENT DETAIL</span><h2>{selected.id}</h2></div><button className="icon-button" onClick={() => setSelected(null)}><Icon name="x" size={16} /></button></div><div className="drawer-status"><StatusBadge value={selected.severity} /><StatusBadge value={selected.status} /><span className="mono dim">RECEIVED {selected.time}</span></div><h3>{selected.type}</h3><div className="drawer-location"><Icon name="mapPin" size={14} /> {selected.location}, Chennai</div><div className="drawer-score"><div><span>PRIORITY SCORE</span><strong>{selected.priority}</strong><small>/ 100</small></div><div className="score-ring" style={{ "--score": `${selected.priority * 3.6}deg` } as React.CSSProperties}><span>{selected.priority}</span></div></div><div className="drawer-grid"><div><span>AFFECTED</span><strong>{selected.affected} <small>PEOPLE</small></strong></div><div><span>VERIFICATION</span><strong>{selected.verification}%</strong></div><div><span>RESPONDER</span><strong className="mono">{selected.responder}</strong></div><div><span>ETA</span><strong>08 <small>MIN</small></strong></div></div><div className="drawer-section"><span className="eyebrow">AI ASSESSMENT</span><p>Multiple signals confirm a high-confidence emergency. Prioritize rescue access before water rises further across the eastern drainage basin.</p></div><div className="drawer-actions"><button className="primary-button" onClick={() => notify(`${selected.id} marked for dispatch`)}><Icon name="responders" size={14} /> DISPATCH UNIT</button><button className="secondary-button" onClick={() => notify("Simulation queued for this incident")}><Icon name="play" size={14} /> SIMULATE</button></div></aside></div>}</div>;
-}
+  const [liveIncidents, setLiveIncidents] = useState<Incident[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadIncidents() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await getIncidents();
+
+        if (cancelled) return;
+
+        const mappedIncidents: Incident[] = response.incidents.map((item) => ({
+          id: item.incident_id,
+          type: item.incident_type,
+          location: `${item.latitude.toFixed(3)}, ${item.longitude.toFixed(3)}`,
+          severity: item.severity.toUpperCase() as Incident["severity"],
+          status: item.status.toUpperCase(),
+          verification: Math.round(item.confidence * 100),
+          priority: item.priority_score,
+          responder: "UNASSIGNED",
+          time: "LIVE",
+          affected: item.people_affected,
+        }));
+
+        setLiveIncidents(mappedIncidents);
+
+        if (mappedIncidents.length > 0) {
+          setSelected((current) => current ?? mappedIncidents[0]);
+        }
+      } catch (requestError) {
+        console.error("Failed to load incidents:", requestError);
+
+        if (!cancelled) {
+          setError(
+            "Unable to connect to the CrisisHub backend. Start the FastAPI server on port 8000.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadIncidents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = useMemo(
+    () =>
+      liveIncidents.filter(
+        (incident) =>
+          (severity === "ALL" || incident.severity === severity) &&
+          `${incident.id} ${incident.type} ${incident.location}`
+            .toLowerCase()
+            .includes(search.toLowerCase()),
+      ),
+    [liveIncidents, search, severity],
+  );
+
+  const criticalCount = liveIncidents.filter(
+    (incident) => incident.severity === "CRITICAL",
+  ).length;
+
+  const verifiedCount = liveIncidents.filter(
+    (incident) => incident.verification >= 90,
+  ).length;
+
+  return (
+    <div className="workspace">
+      <SectionHeader
+        eyebrow="OPERATIONS / INCIDENT INTELLIGENCE"
+        title="INCIDENTS"
+        desc={`${liveIncidents.length} live incidents · ${verifiedCount} high-confidence · ${criticalCount} critical`}
+        action={
+          <button
+            className="primary-button"
+            onClick={() => notify("Incident intake panel opened")}
+          >
+            <Icon name="plus" size={14} /> NEW INCIDENT
+          </button>
+        }
+      />
+
+      <div className="table-toolbar">
+        <div className="search-field">
+          <Icon name="search" size={15} />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search ID, type, or location..."
+          />
+        </div>
+
+        <div className="filter-pills">
+          {["ALL", "CRITICAL", "HIGH", "MODERATE"].map((value) => (
+            <button
+              key={value}
+              className={severity === value ? "active" : ""}
+              onClick={() => setSeverity(value)}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+
+        <button className="secondary-button compact">
+          <Icon name="sliders" size={14} /> MORE FILTERS
+        </button>
+      </div>
+
+      {loading && (
+        <div className="panel" style={{ padding: "24px" }}>
+          <span className="eyebrow">BACKEND CONNECTION</span>
+          <p>Loading live incidents from CrisisHub API...</p>
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="panel" style={{ padding: "24px" }}>
+          <span className="eyebrow">BACKEND CONNECTION ERROR</span>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="panel table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>TYPE</th>
+                <th>LOCATION</th>
+                <th>SEVERITY</th>
+                <th>STATUS</th>
+                <th>VERIFY</th>
+                <th>PRIORITY</th>
+                <th>RESPONDER</th>
+                <th>TIME</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {filtered.map((incident) => (
+                <tr
+                  key={incident.id}
+                  onClick={() => setSelected(incident)}
+                >
+                  <td className="mono strong-cell">{incident.id}</td>
+
+                  <td>
+                    <span className="type-cell">
+                      <span className="table-type-dot" />
+                      {incident.type}
+                    </span>
+                  </td>
+
+                  <td>{incident.location}</td>
+
+                  <td>
+                    <StatusBadge value={incident.severity} />
+                  </td>
+
+                  <td>
+                    <StatusBadge value={incident.status} />
+                  </td>
+
+                  <td>
+                    <span className="verify-cell">
+                      <span className="verify-track">
+                        <i
+                          style={{
+                            width: `${incident.verification}%`,
+                          }}
+                        />
+                      </span>
+                      {incident.verification}%
+                    </span>
+                  </td>
+
+                  <td>
+                    <strong
+                      className={
+                        incident.priority > 90
+                          ? "danger-text"
+                          : "amber-text"
+                      }
+                    >
+                      {incident.priority}
+                    </strong>
+                  </td>
+
+                  <td className="mono">{incident.responder}</td>
+
+                  <td className="mono dim">{incident.time}</td>
+                </tr>
+              ))}
+
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={9}>
+                    <div style={{ padding: "28px", textAlign: "center" }}>
+                      No incidents match the current filters.
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          <div className="table-footer">
+            <span>
+              SHOWING {filtered.length} OF {liveIncidents.length} INCIDENTS
+            </span>
+
+            <div>
+              <button>
+                <Icon name="chevronLeft" size={14} />
+              </button>
+              <button className="active">1</button>
+              <button>2</button>
+              <button>3</button>
+              <button>
+                <Icon name="chevronRight" size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selected && (
+        <div
+          className="drawer-overlay"
+          onMouseDown={() => setSelected(null)}
+        >
+          <aside
+            className="incident-drawer panel"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="drawer-head">
+              <div>
+                <span className="eyebrow">INCIDENT DETAIL</span>
+                <h2>{selected.id}</h2>
+              </div>
+
+              <button
+                className="icon-button"
+                onClick={() => setSelected(null)}
+              >
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+
+            <div className="drawer-status">
+              <StatusBadge value={selected.severity} />
+              <StatusBadge value={selected.status} />
+              <span className="mono dim">
+                SOURCE: CRISISHUB API
+              </span>
+            </div>
+
+            <h3>{selected.type}</h3>
+
+            <div className="drawer-location">
+              <Icon name="mapPin" size={14} /> {selected.location}
+            </div>
+
+            <div className="drawer-score">
+              <div>
+                <span>PRIORITY SCORE</span>
+                <strong>{selected.priority}</strong>
+                <small>/ 100</small>
+              </div>
+
+              <div
+                className="score-ring"
+                style={
+                  {
+                    "--score": `${selected.priority * 3.6}deg`,
+                  } as React.CSSProperties
+                }
+              >
+                <span>{selected.priority}</span>
+              </div>
+            </div>
+
+            <div className="drawer-grid">
+              <div>
+                <span>AFFECTED</span>
+                <strong>
+                  {selected.affected} <small>PEOPLE</small>
+                </strong>
+              </div>
+
+              <div>
+                <span>VERIFICATION</span>
+                <strong>{selected.verification}%</strong>
+              </div>
+
+              <div>
+                <span>RESPONDER</span>
+                <strong className="mono">
+                  {selected.responder}
+                </strong>
+              </div>
+
+              <div>
+                <span>STATUS</span>
+                <strong>{selected.status}</strong>
+              </div>
+            </div>
+
+            <div className="drawer-section">
+              <span className="eyebrow">AI ASSESSMENT</span>
+              <p>
+                Live incident data has been received from the CrisisHub
+                FastAPI backend. Priority and confidence values shown here
+                are produced by the backend incident model.
+              </p>
+            </div>
+
+            <div className="drawer-actions">
+              <button
+                className="primary-button"
+                onClick={() =>
+                  notify(`${selected.id} marked for dispatch review`)
+                }
+              >
+                <Icon name="responders" size={14} /> DISPATCH UNIT
+              </button>
+
+              <button
+                className="secondary-button"
+                onClick={() =>
+                  notify("Simulation queued for this incident")
+                }
+              >
+                <Icon name="play" size={14} /> SIMULATE
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+    </div>
+  );
+}
 export function AgentNetworkPage() {
   const [selected, setSelected] = useState(agents[0]);
   return <div className="workspace"><SectionHeader eyebrow="INTELLIGENCE / MULTI-AGENT SYSTEM" title="AI AGENT NETWORK" desc="Nine specialized agents coordinate a traceable response recommendation before human approval." action={<div className="network-health"><span className="led led-green" /> 09 / 09 ONLINE</div>} /><div className="agent-network-layout"><Panel title="DECISION PIPELINE" meta="CR-1048 · LIVE TRACE" className="pipeline-panel"><div className="pipeline"><div className="pipeline-node source"><Icon name="alert" size={17} /><div><strong>INCIDENT</strong><small>CR-1048 · INBOUND</small></div></div><div className="pipeline-connector active" /><div className="pipeline-node"><span className="agent-orb blue"><Icon name="shield" size={16} /></span><div><strong>VERIFICATION</strong><small>91% CONFIDENCE</small></div><StatusBadge value="COMPLETE" /></div><div className="pipeline-connector active" /><div className="pipeline-node"><span className="agent-orb purple"><Icon name="eye" size={16} /></span><div><strong>VISION</strong><small>IMAGE ANALYSIS</small></div><StatusBadge value="PROCESSING" /></div><div className="pipeline-connector active" /><div className="pipeline-node"><span className="agent-orb green"><Icon name="mapPin" size={16} /></span><div><strong>GEO</strong><small>LOCATION RESOLVED</small></div><StatusBadge value="COMPLETE" /></div><div className="pipeline-connector active" /><div className="pipeline-node"><span className="agent-orb amber"><Icon name="priority" size={16} /></span><div><strong>PRIORITY</strong><small>SCORE 97 / 100</small></div><StatusBadge value="PROCESSING" /></div><div className="pipeline-connector" /><div className="pipeline-node"><span className="agent-orb blue"><Icon name="route" size={16} /></span><div><strong>ROUTING</strong><small>UNIT MATCHING</small></div><StatusBadge value="ONLINE" /></div><div className="pipeline-connector" /><div className="pipeline-node"><span className="agent-orb red"><Icon name="brain" size={16} /></span><div><strong>CRITIC</strong><small>HUMAN REVIEW GATE</small></div><StatusBadge value="WARNING" /></div><div className="human-gate"><Icon name="user" size={16} /><span>HUMAN APPROVAL REQUIRED</span><button>REVIEW <Icon name="chevronRight" size={13} /></button></div></div></Panel><div className="agent-side"><Panel title="AGENT REGISTRY" meta="SORT BY LOAD"><div className="agent-list">{agents.map((agent) => <button className={`agent-list-row ${selected.name === agent.name ? "selected" : ""}`} onClick={() => setSelected(agent)} key={agent.name}><span className={`agent-list-icon ${agent.accent}`}><Icon name={agent.name === "CRISISCOPILOT" ? "copilot" : "brain"} size={14} /></span><div><strong>{agent.name}</strong><small>{agent.role}</small></div><span className="agent-load"><i style={{ width: `${agent.load}%` }} /><small>{agent.load}%</small></span></button>)}</div></Panel><Panel title="SELECTED AGENT" meta="TRACE ID 9F4A"><div className="selected-agent"><div className={`large-orb ${selected.accent}`}><Icon name="brain" size={23} /></div><h3>{selected.name}</h3><p>{selected.role}</p><StatusBadge value={selected.status} /><div className="agent-facts"><span>MODEL</span><strong>CH-OPS-4.2</strong><span>LATENCY</span><strong>284ms</strong><span>LAST OUTPUT</span><strong>22:04:37</strong></div></div></Panel></div></div></div>;
