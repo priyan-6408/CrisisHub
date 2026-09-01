@@ -3,7 +3,7 @@ def predict_impact(incident):
     Predicts possible risks and impacts of an incident.
     """
 
-    incident_type = incident.get("type", "").lower()
+    incident_type = (incident.get("incident_type") or incident.get("type") or "").lower()
     people_affected = incident.get("people_affected", 0)
 
     risks = []
