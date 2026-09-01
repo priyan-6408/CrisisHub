@@ -1,31 +1,45 @@
 def verify_incident(incident):
     """
-    Checks whether an incident contains enough information
-    to be reasonably verified.
+    Verifies that an incident contains the required information.
+    Supports the backend schema and older field names for compatibility.
     """
 
-    required_fields = [
-        "type",
-        "description",
-        "location"
-    ]
+    incident_type = (
+        incident.get("incident_type")
+        or incident.get("type")
+        or ""
+    ).strip()
 
-    missing_fields = [
-        field
-        for field in required_fields
-        if not incident.get(field)
-    ]
+    description = incident.get("description", "").strip()
 
-    if not missing_fields:
-        status = "VERIFIED"
-        confidence = 0.9
-    else:
-        status = "NEEDS_REVIEW"
-        confidence = 0.5
+    latitude = incident.get("latitude")
+    longitude = incident.get("longitude")
+
+    # Backward compatibility with the older location field
+    location = incident.get("location")
+
+    missing_fields = []
+
+    if not incident_type:
+        missing_fields.append("incident_type")
+
+    if not description:
+        missing_fields.append("description")
+
+    if latitude is None and longitude is None and not location:
+        missing_fields.extend(["latitude", "longitude"])
+
+    if missing_fields:
+        return {
+            "agent": "verification_agent",
+            "status": "NEEDS_REVIEW",
+            "verified": False,
+            "missing_fields": missing_fields
+        }
 
     return {
         "agent": "verification_agent",
-        "status": status,
-        "confidence": confidence,
-        "missing_fields": missing_fields
+        "status": "VERIFIED",
+        "verified": True,
+        "missing_fields": []
     }
