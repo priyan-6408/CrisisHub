@@ -29,6 +29,6 @@ def triage_incident(incident):
     return {
         "agent": "triage_agent",
         "severity": severity,
-        "priority": priority,
+        "priority_score": priority,
         "reason": f"Incident classified as {severity} priority."
     }
