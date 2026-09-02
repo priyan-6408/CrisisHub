@@ -17,12 +17,12 @@ app.include_router(approval_router)
 def root():
     return {
         "message": "CrisisHub API is running",
-        "status": "ok"
+        "status": "ok",
     }
 
 
 @app.get("/health")
 def health():
     return {
-        "status": "healthy"
+        "status": "healthy",
     }
