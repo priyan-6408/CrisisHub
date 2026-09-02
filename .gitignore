@@ -17,4 +17,5 @@ dist/
 .DS_Store
 Thumbs.db
 .vscode/
-.idea/
+.idea/frontend/.manus-logs/
+frontend/ .manus-logs/
