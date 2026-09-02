@@ -1,0 +1,72 @@
+[
+  {
+    "incident_id": "CR-1001",
+    "title": "Residential Flood Emergency",
+    "incident_type": "flood",
+    "description": "Several residents are trapped inside flooded houses and one elderly person is injured.",
+    "latitude": 12.845,
+    "longitude": 80.226,
+    "people_affected": 120,
+    "severity": "critical",
+    "priority_score": 97,
+    "status": "active",
+    "verified": true,
+    "confidence": 0.96
+  },
+  {
+    "incident_id": "CR-1002",
+    "title": "Residential Fire",
+    "incident_type": "fire",
+    "description": "Fire reported in a residential building. Several residents require evacuation.",
+    "latitude": 12.936,
+    "longitude": 80.237,
+    "people_affected": 35,
+    "severity": "high",
+    "priority_score": 82,
+    "status": "active",
+    "verified": true,
+    "confidence": 0.91
+  },
+  {
+    "incident_id": "CR-1003",
+    "title": "Earthquake Damage",
+    "incident_type": "earthquake",
+    "description": "Buildings have been damaged and emergency assistance is required.",
+    "latitude": 13.0827,
+    "longitude": 80.2707,
+    "people_affected": 60,
+    "severity": "high",
+    "priority_score": 88,
+    "status": "active",
+    "verified": false,
+    "confidence": 0.84
+  },
+  {
+    "incident_id": "CR-1004",
+    "title": "Minor Road Accident",
+    "incident_type": "accident",
+    "description": "Minor road accident with one person injured.",
+    "latitude": 12.9716,
+    "longitude": 80.2206,
+    "people_affected": 2,
+    "severity": "moderate",
+    "priority_score": 35,
+    "status": "active",
+    "verified": true,
+    "confidence": 0.95
+  },
+  {
+    "incident_id": "CR-1005",
+    "title": "Cyclone Evacuation",
+    "incident_type": "cyclone",
+    "description": "Strong winds reported and residents are being evacuated from vulnerable areas.",
+    "latitude": 13.0500,
+    "longitude": 80.2820,
+    "people_affected": 28,
+    "severity": "high",
+    "priority_score": 76,
+    "status": "active",
+    "verified": true,
+    "confidence": 0.89
+  }
+]

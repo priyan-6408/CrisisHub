@@ -5,7 +5,7 @@ def triage_incident(incident):
 
     people_affected = incident.get("people_affected", 0)
     description = incident.get("description", "").lower()
-    incident_type = incident.get("type", "").lower()
+    incident_type = (incident.get("incident_type") or incident.get("type") or "").lower()
 
     severity = "LOW"
     priority = 3
@@ -29,6 +29,6 @@ def triage_incident(incident):
     return {
         "agent": "triage_agent",
         "severity": severity,
-        "priority": priority,
+        "priority_score": priority,
         "reason": f"Incident classified as {severity} priority."
     }

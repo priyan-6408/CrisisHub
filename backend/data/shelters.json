@@ -1,0 +1,32 @@
+[
+  {
+    "shelter_id": "S-001",
+    "name": "Kelambakkam Community Shelter",
+    "location": "Kelambakkam",
+    "latitude": 12.8450,
+    "longitude": 80.2260,
+    "capacity": 200,
+    "current_occupancy": 75,
+    "status": "open"
+  },
+  {
+    "shelter_id": "S-002",
+    "name": "Navalur Relief Centre",
+    "location": "Navalur",
+    "latitude": 12.8500,
+    "longitude": 80.2200,
+    "capacity": 150,
+    "current_occupancy": 40,
+    "status": "open"
+  },
+  {
+    "shelter_id": "S-003",
+    "name": "Sholinganallur Emergency Shelter",
+    "location": "Sholinganallur",
+    "latitude": 12.9010,
+    "longitude": 80.2270,
+    "capacity": 250,
+    "current_occupancy": 120,
+    "status": "open"
+  }
+]

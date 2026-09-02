@@ -3,7 +3,6 @@ from backend.routes.incident_routes import router as incident_router
 from backend.routes.action_routes import router as action_router
 from backend.routes.approval_routes import router as approval_router
 
-
 app = FastAPI(
     title="CrisisHub API",
     version="1.0.0",
